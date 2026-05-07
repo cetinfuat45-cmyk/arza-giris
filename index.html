@@ -133,18 +133,7 @@
         </div>
     </div>
 
-    <!-- 2. NORMAL ÇALIŞAN (İŞ İSTEK FORMU) -->
-    <div id="screen-form" class="screen">
-        <div class="card" style="margin-top: 60px;">
-            <h2 style="margin-bottom: 20px; text-align: center; color: var(--accent-color);">Yeni İş İsteği</h2>
-            <select id="form-maliyet"><option value="">Maliyet Merkezi Seçin...</option></select>
-            <select id="form-makine"><option value="">Makine Seçin...</option></select>
-            <select id="form-vardiya"><option value="">Vardiya Seçin...</option></select>
-            <select id="form-isturu"><option value="">İş Türü Seçin...</option></select>
-            <textarea id="form-aciklama" rows="4" placeholder="Arıza/İstek açıklamasını yazınız..."></textarea>
-            <button class="btn-primary btn-danger" onclick="submitForm()">İsteği Gönder (Kaydet)</button>
-        </div>
-    </div>
+    <!-- İŞ İSTEK FORMU KALDIRILDI - SİSTEM SADECE AÇIK ARIZALARI LİSTELEYECEK -->
 
     <!-- 3. OPERATÖR (QR OKUTMA VE MÜDAHALE EKRANI) -->
     <div id="screen-op" class="screen">
@@ -239,17 +228,12 @@
                 document.getElementById('logout-btn').style.display = 'block';
                 
                 // Role Göre Yönlendirme
-                if(res.role === "NORMAL") {
-                    await loadDropdowns();
-                    showScreen('screen-form');
-                } else if(res.role === "OP" || res.role === "OPERATÖR") {
+                if(res.role === "OP" || res.role === "OPERATÖR") {
                     showScreen('screen-op');
-                } else if(res.role === "YÖNETİCİ" || res.role === "ADMİN") {
+                } else {
+                    // Yönetici veya diğer personeller sadece açık listeyi görür
                     await loadAdminData();
                     showScreen('screen-admin');
-                } else {
-                    alert("Tanımsız Yetki: " + res.role);
-                    showScreen('screen-form'); // Varsayılan
                 }
             } else {
                 alert(res.message);
@@ -268,52 +252,8 @@
             }
         }
 
-        // --- 2. NORMAL ÇALIŞAN (FORM) ---
-        async function loadDropdowns() {
-            if(dropdownData) return; // Zaten yüklüyse tekrar çekme
-            showLoader("Veriler alınıyor...");
-            const res = await sendToBackend({ action: "getDropdownData" });
-            if(res.success) {
-                dropdownData = res.data;
-                populateSelect('form-maliyet', dropdownData.maliyet);
-                populateSelect('form-makine', dropdownData.makine);
-                populateSelect('form-vardiya', dropdownData.vardiya);
-                populateSelect('form-isturu', dropdownData.isTuru);
-            }
-            hideLoader();
-        }
-
-        function populateSelect(id, list) {
-            const el = document.getElementById(id);
-            el.innerHTML = `<option value="">Seçiniz...</option>`;
-            list.forEach(item => {
-                el.innerHTML += `<option value="${item}">${item}</option>`;
-            });
-        }
-
-        async function submitForm() {
-            const fData = {
-                adSoyad: currentUser.name,
-                maliyetMerkezi: document.getElementById('form-maliyet').value,
-                makine: document.getElementById('form-makine').value,
-                vardiya: document.getElementById('form-vardiya').value,
-                isTuru: document.getElementById('form-isturu').value,
-                aciklama: document.getElementById('form-aciklama').value
-            };
-
-            if(!fData.makine || !fData.aciklama) return alert("Makine ve Açıklama zorunludur!");
-
-            showLoader("İstek gönderiliyor...");
-            const res = await sendToBackend({ action: "submitJobRequest", formData: fData });
-            hideLoader();
-            
-            if(res.success) {
-                alert("Arıza/İstek başarıyla yöneticilere ve operatörlere iletildi.");
-                document.getElementById('form-aciklama').value = ""; // Formu temizle
-            } else {
-                alert("Hata: " + res.message);
-            }
-        }
+        // --- 2. FORM İŞLEMLERİ İPTAL EDİLDİ ---
+        // Uygulama sadece "giris" sekmesindeki I-P'si boş olan (açık) kayıtları okumak üzerine kurgulandı.
 
         // --- 3. OPERATÖR (QR & LİSTE) ---
         let html5QrcodeScanner;
@@ -419,9 +359,9 @@
             }
         }
 
-        // --- 4. YÖNETİCİ EKRANI ---
+        // --- 4. AÇIK ARIZALAR LİSTESİ (YÖNETİCİ/PERSONEL EKRANI) ---
         async function loadAdminData() {
-            showLoader("Sistem durumu çekiliyor...");
+            showLoader("Açık Arızalar Çekiliyor...");
             const res = await sendToBackend({ action: "getOpenFaults" });
             hideLoader();
             
