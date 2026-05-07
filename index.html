@@ -278,10 +278,33 @@
 
         function populateSelect(id, list) {
             const el = document.getElementById(id);
-            if(!el) return;
-            el.innerHTML = `<option value="">${el.options[0].text}</option>`;
+            if(!el) {
+                alert("HATA: Ekranda " + id + " kutusu bulunamadı!");
+                return;
+            }
+            if(!list || list.length === 0) {
+                alert("HATA: " + id + " için gelen veri listesi boş!");
+                return;
+            }
+            
+            // İlk seçeneği sakla
+            const firstOptionText = el.options.length > 0 ? el.options[0].text : "Seçiniz...";
+            
+            // Kutuyu tamamen temizle
+            el.innerHTML = "";
+            
+            // İlk seçeneği geri ekle
+            const defaultOpt = document.createElement('option');
+            defaultOpt.value = "";
+            defaultOpt.text = firstOptionText;
+            el.appendChild(defaultOpt);
+            
+            // Gelen listeyi ekle
             list.forEach(item => {
-                el.innerHTML += `<option value="${item}">${item}</option>`;
+                const opt = document.createElement('option');
+                opt.value = item;
+                opt.text = item;
+                el.appendChild(opt);
             });
         }
 
