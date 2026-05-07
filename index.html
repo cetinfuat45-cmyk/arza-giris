@@ -127,7 +127,7 @@
         <div class="card">
             <div class="header-logo"><img src="AKGLOG.png" alt="AKG LOGO" onerror="this.style.display='none'"></div>
             <h2 style="text-align: center; margin-bottom: 20px;">Merkezi Sisteme Giriş</h2>
-            <input type="text" id="login-user" placeholder="Adınız Soyadınız">
+            <p style="text-align: center; margin-bottom: 15px; font-size: 14px; color: var(--text-secondary);">Lütfen size tanımlanan giriş şifrenizi yazınız.</p>
             <input type="password" id="login-pass" placeholder="Şifreniz">
             <button class="btn-primary" onclick="doLogin()">Giriş Yap</button>
         </div>
@@ -215,12 +215,11 @@
 
         // --- 1. GİRİŞ İŞLEMİ ---
         async function doLogin() {
-            const user = document.getElementById('login-user').value.trim();
             const pass = document.getElementById('login-pass').value.trim();
-            if(!user || !pass) return alert("Lütfen boş alan bırakmayın.");
+            if(!pass) return alert("Lütfen şifrenizi girin.");
 
             showLoader("Kimlik doğrulanıyor...");
-            const res = await sendToBackend({ action: "login", username: user, password: pass });
+            const res = await sendToBackend({ action: "login", password: pass });
             
             if(res.success) {
                 currentUser = res;
@@ -246,7 +245,6 @@
                 currentUser = null;
                 document.getElementById('user-info').innerText = "";
                 document.getElementById('logout-btn').style.display = 'none';
-                document.getElementById('login-user').value = "";
                 document.getElementById('login-pass').value = "";
                 showScreen('screen-login');
             }
