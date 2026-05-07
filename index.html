@@ -466,12 +466,24 @@
                     cont.innerHTML += `<h2 style="color:${color}; margin: 25px 0 10px 0; border-bottom: 2px solid ${color}; padding-bottom:5px; text-transform: uppercase;">${tur} (${faults.length})</h2>`;
                     
                     faults.forEach(f => {
+                        // Tarih formatını güzelleştirme
+                        let displayDate = f.tarih;
+                        try {
+                            if(f.tarih && f.tarih.includes('/')) {
+                                // Zaten formatlı gelmiş olabilir
+                            } else if(f.tarih) {
+                                displayDate = new Date(f.tarih).toLocaleString();
+                                if(displayDate === "Invalid Date") displayDate = f.tarih;
+                            }
+                        } catch(e) { displayDate = f.tarih; }
+
                         cont.innerHTML += `
                             <div class="fault-item" style="border-left: 5px solid ${color}; border-right: ${upperTur.includes('!') ? '2px solid ' + color : 'none'};" onclick="prepareMaintenance(${f.rowIndex}, '${f.makine}')">
                                 <h3>${f.makine}</h3>
-                                <p><b>Bildiren:</b> ${f.talepEden} | <b>Tarih:</b> ${new Date(f.tarih).toLocaleString()}</p>
+                                <p><b>Bildiren:</b> ${f.talepEden} | <b>Tarih:</b> ${displayDate}</p>
+                                <p><b>Maliyet:</b> ${f.maliyetMerkezi} | <b>İş Türü:</b> ${f.isTuru}</p>
                                 <p><b>Açıklama:</b> ${f.aciklama}</p>
-                                <p><b>Durum (Log):</b> <br>${f.durum ? f.durum.replace(/\n/g, '<br>') : 'Henüz işlem yok'}</p>
+                                <p><b>Log:</b> <br>${f.durum ? f.durum.replace(/\n/g, '<br>') : 'Henüz işlem yok'}</p>
                             </div>
                         `;
                     });
