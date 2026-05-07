@@ -180,7 +180,7 @@
 
     <script>
         // LÜTFEN GOOGLE APPS SCRIPT YAYIN URL'NİZİ BURAYA YAPIŞTIRIN
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzg-GrNKBnqbdzkQuV89ojCcwaUiODLYsb5FRU6YlD7g33d_-ExOOumApkToCtaYWmn/exec"; 
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwbS62j_dBcMUIZ2VwOLgbnzgfZwQTx3jbwqhUd8KC3y4N6EUMOh6XUf8nEa-S46B8t/exec"; 
 
         let currentUser = null;
         let dropdownData = null;
@@ -196,9 +196,10 @@
         }
 
         // --- Kart Tıklama: QR Okuyucuya Yönlendir ---
-        function prepareMaintenance(rowIndex, makine) {
+        async function prepareMaintenance(rowIndex, makine) {
             currentFaultRowIndex = rowIndex;
             targetMachineName = makine;
+            await loadOPDropdowns(); // Yönetici de tıklasa listelerin dolması için
             showScreen('screen-op');
             startQRScanner();
             alert(`${makine} arızasına müdahale için lütfen makine üzerindeki QR kodu okutun.`);
