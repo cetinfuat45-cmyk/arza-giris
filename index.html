@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AKG Merkezi HUB</title>
+    <link rel="manifest" href="./manifest.json">
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        /* TEMA DEĞİŞKENLERİ */
+        :root {
+            --bg-body: #0f172a;
+            --bg-panel: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-color: #38bdf8;
+            --border-color: #334155;
+            --accent-red: #ef4444;
+            --accent-green: #10b981;
+            --accent-orange: #f59e0b;
+            --font-size-base: 16px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            font-size: var(--font-size-base);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* ORTAK KART TASARIMI */
+        .card {
+            background: var(--bg-panel);
+            width: 95%;
+            max-width: 500px;
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            border: 1px solid var(--border-color);
+        }
+
+        .header-logo { text-align: center; margin-bottom: 20px; }
+        .header-logo img { width: 150px; }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: rgba(0,0,0,0.2);
+            color: var(--text-primary);
+            font-size: 16px;
+        }
+
+        button.btn-primary {
+            width: 100%;
+            padding: 15px;
+            background: var(--accent-color);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-bottom: 10px;
+        }
+        button.btn-primary:hover { opacity: 0.9; transform: translateY(-2px); }
+        
+        button.btn-danger { background: var(--accent-red); }
+        button.btn-success { background: var(--accent-green); }
+        button.btn-warning { background: var(--accent-orange); color: #000; }
+
+        .screen { display: none; width: 100%; display: flex; flex-direction: column; align-items: center; }
+        
+        /* Loading Overlay */
+        #loader {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 9999;
+            display: none; align-items: center; justify-content: center; flex-direction: column;
+        }
+        .spinner {
+            width: 50px; height: 50px; border: 5px solid #333; border-top: 5px solid var(--accent-color);
+            border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* ARIZA LİSTESİ (OP ve YÖNETİCİ) */
+        .fault-item {
+            background: rgba(0,0,0,0.2);
+            border-left: 4px solid var(--accent-red);
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+        }
+        .fault-item h3 { margin-bottom: 5px; color: var(--accent-color); }
+        .fault-item p { margin-bottom: 5px; font-size: 14px; color: var(--text-secondary); }
+
+        #qr-reader { width: 100%; max-width: 400px; margin: 0 auto; border-radius: 10px; overflow: hidden; }
+
+        /* AYARLAR VE ÇIKIŞ */
+        .top-bar { width: 100%; display: flex; justify-content: space-between; padding: 15px; position: absolute; top:0; z-index: 100; }
+        .top-bar button { background: none; border: none; color: var(--text-primary); font-size: 24px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <button id="logout-btn" onclick="logout()" style="display:none;" title="Çıkış Yap">⏻</button>
+        <span id="user-info" style="font-weight: bold; color: var(--accent-color);"></span>
+    </div>
+
+    <!-- LOADER -->
+    <div id="loader">
+        <div class="spinner"></div>
+        <p id="loader-text">Lütfen bekleyin...</p>
+    </div>
+
+    <!-- 1. GİRİŞ EKRANI -->
+    <div id="screen-login" class="screen" style="display: flex; justify-content: center; height: 100vh;">
+        <div class="card">
+            <div class="header-logo"><img src="AKGLOG.png" alt="AKG LOGO" onerror="this.style.display='none'"></div>
+            <h2 style="text-align: center; margin-bottom: 20px;">Merkezi Sisteme Giriş</h2>
+            <input type="text" id="login-user" placeholder="Adınız Soyadınız">
+            <input type="password" id="login-pass" placeholder="Şifreniz">
+            <button class="btn-primary" onclick="doLogin()">Giriş Yap</button>
+        </div>
+    </div>
+
+    <!-- 2. NORMAL ÇALIŞAN (İŞ İSTEK FORMU) -->
+    <div id="screen-form" class="screen">
+        <div class="card" style="margin-top: 60px;">
+            <h2 style="margin-bottom: 20px; text-align: center; color: var(--accent-color);">Yeni İş İsteği</h2>
+            <select id="form-maliyet"><option value="">Maliyet Merkezi Seçin...</option></select>
+            <select id="form-makine"><option value="">Makine Seçin...</option></select>
+            <select id="form-vardiya"><option value="">Vardiya Seçin...</option></select>
+            <select id="form-isturu"><option value="">İş Türü Seçin...</option></select>
+            <textarea id="form-aciklama" rows="4" placeholder="Arıza/İstek açıklamasını yazınız..."></textarea>
+            <button class="btn-primary btn-danger" onclick="submitForm()">İsteği Gönder (Kaydet)</button>
+        </div>
+    </div>
+
+    <!-- 3. OPERATÖR (QR OKUTMA VE MÜDAHALE EKRANI) -->
+    <div id="screen-op" class="screen">
+        <div class="card" style="margin-top: 60px; text-align: center;">
+            <h2 style="margin-bottom: 10px; color: var(--accent-orange);">Operatör Paneli</h2>
+            <p style="margin-bottom: 20px; color: var(--text-secondary);">Müdahale edeceğiniz makinenin QR kodunu okutun.</p>
+            
+            <div id="qr-reader"></div>
+            
+            <button class="btn-primary" style="margin-top:20px;" onclick="startQRScanner()">QR Kamerayı Aç</button>
+            <button class="btn-primary btn-warning" onclick="fetchOpenFaultsForOP()">Açık Arızaları Gör (Manuel Liste)</button>
+        </div>
+
+        <!-- QR Okunduktan sonra çıkan Arıza Detay Ekranı -->
+        <div id="op-action-card" class="card" style="display: none;">
+            <h3 id="op-makine-adi" style="color: var(--accent-color); margin-bottom: 10px;"></h3>
+            <p id="op-ariza-detay" style="margin-bottom: 20px;"></p>
+            
+            <div id="op-start-section">
+                <button class="btn-primary btn-success" onclick="startJob()">İşe Başla (Sayacı Başlat)</button>
+            </div>
+
+            <div id="op-finish-section" style="display: none;">
+                <textarea id="op-islem-notu" rows="3" placeholder="Yapılan işlemi kısaca yazınız..."></textarea>
+                <button class="btn-primary btn-danger" onclick="finishJob('TAMAMLANDI')">İşi Tamamla (Kapat)</button>
+                <button class="btn-primary btn-warning" onclick="finishJob('PARÇA BEKLİYOR')">Parça Bekliyor (Durdur)</button>
+                <button class="btn-primary" onclick="finishJob('VARDİYA DEVRİ')">Vardiya Devri (Durdur)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. YÖNETİCİ EKRANI -->
+    <div id="screen-admin" class="screen">
+        <div class="card" style="margin-top: 60px; max-width: 800px;">
+            <h2 style="margin-bottom: 20px; color: var(--accent-color);">Yönetici / Bakım Paneli</h2>
+            <div id="admin-faults-container"></div>
+        </div>
+    </div>
+
+    <script>
+        // LÜTFEN GOOGLE APPS SCRIPT YAYIN URL'NİZİ BURAYA YAPIŞTIRIN
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwbS62j_dBcMUIZ2VwOLgbnzgfZwQTx3jbwqhUd8KC3y4N6EUMOh6XUf8nEa-S46B8t/exec"; 
+
+        let currentUser = null;
+        let dropdownData = null;
+        let currentFaultRowIndex = null; // OP'nin üzerinde çalıştığı satır
+
+        // Ekran Değiştirici
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+            document.getElementById(screenId).style.display = 'flex';
+        }
+
+        // Loader Kontrol
+        function showLoader(text) {
+            document.getElementById('loader-text').innerText = text || "Yükleniyor...";
+            document.getElementById('loader').style.display = 'flex';
+        }
+        function hideLoader() { document.getElementById('loader').style.display = 'none'; }
+
+        // Backend İletişim (Fetch)
+        async function sendToBackend(data) {
+            if(SCRIPT_URL === "BURAYA_GOOGLE_SCRIPT_WEB_APP_URL_GELECEK") {
+                alert("LÜTFEN İLK OLARAK GOOGLE SCRIPT URL'NİZİ KODA EKLAYIN!");
+                return { success: false };
+            }
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(data)
+                });
+                return await response.json();
+            } catch (err) {
+                console.error(err);
+                alert("Bağlantı hatası!");
+                return { success: false };
+            }
+        }
+
+        // --- 1. GİRİŞ İŞLEMİ ---
+        async function doLogin() {
+            const user = document.getElementById('login-user').value.trim();
+            const pass = document.getElementById('login-pass').value.trim();
+            if(!user || !pass) return alert("Lütfen boş alan bırakmayın.");
+
+            showLoader("Kimlik doğrulanıyor...");
+            const res = await sendToBackend({ action: "login", username: user, password: pass });
+            
+            if(res.success) {
+                currentUser = res;
+                document.getElementById('user-info').innerText = `${res.name} (${res.role})`;
+                document.getElementById('logout-btn').style.display = 'block';
+                
+                // Role Göre Yönlendirme
+                if(res.role === "NORMAL") {
+                    await loadDropdowns();
+                    showScreen('screen-form');
+                } else if(res.role === "OP" || res.role === "OPERATÖR") {
+                    showScreen('screen-op');
+                } else if(res.role === "YÖNETİCİ" || res.role === "ADMİN") {
+                    await loadAdminData();
+                    showScreen('screen-admin');
+                } else {
+                    alert("Tanımsız Yetki: " + res.role);
+                    showScreen('screen-form'); // Varsayılan
+                }
+            } else {
+                alert(res.message);
+            }
+            hideLoader();
+        }
+
+        function logout() {
+            if(confirm("Çıkış yapmak istediğinize emin misiniz?")) {
+                currentUser = null;
+                document.getElementById('user-info').innerText = "";
+                document.getElementById('logout-btn').style.display = 'none';
+                document.getElementById('login-user').value = "";
+                document.getElementById('login-pass').value = "";
+                showScreen('screen-login');
+            }
+        }
+
+        // --- 2. NORMAL ÇALIŞAN (FORM) ---
+        async function loadDropdowns() {
+            if(dropdownData) return; // Zaten yüklüyse tekrar çekme
+            showLoader("Veriler alınıyor...");
+            const res = await sendToBackend({ action: "getDropdownData" });
+            if(res.success) {
+                dropdownData = res.data;
+                populateSelect('form-maliyet', dropdownData.maliyet);
+                populateSelect('form-makine', dropdownData.makine);
+                populateSelect('form-vardiya', dropdownData.vardiya);
+                populateSelect('form-isturu', dropdownData.isTuru);
+            }
+            hideLoader();
+        }
+
+        function populateSelect(id, list) {
+            const el = document.getElementById(id);
+            el.innerHTML = `<option value="">Seçiniz...</option>`;
+            list.forEach(item => {
+                el.innerHTML += `<option value="${item}">${item}</option>`;
+            });
+        }
+
+        async function submitForm() {
+            const fData = {
+                adSoyad: currentUser.name,
+                maliyetMerkezi: document.getElementById('form-maliyet').value,
+                makine: document.getElementById('form-makine').value,
+                vardiya: document.getElementById('form-vardiya').value,
+                isTuru: document.getElementById('form-isturu').value,
+                aciklama: document.getElementById('form-aciklama').value
+            };
+
+            if(!fData.makine || !fData.aciklama) return alert("Makine ve Açıklama zorunludur!");
+
+            showLoader("İstek gönderiliyor...");
+            const res = await sendToBackend({ action: "submitJobRequest", formData: fData });
+            hideLoader();
+            
+            if(res.success) {
+                alert("Arıza/İstek başarıyla yöneticilere ve operatörlere iletildi.");
+                document.getElementById('form-aciklama').value = ""; // Formu temizle
+            } else {
+                alert("Hata: " + res.message);
+            }
+        }
+
+        // --- 3. OPERATÖR (QR & LİSTE) ---
+        let html5QrcodeScanner;
+        function startQRScanner() {
+            document.getElementById('qr-reader').innerHTML = ""; // Temizle
+            html5QrcodeScanner = new Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: 250 });
+            html5QrcodeScanner.render(onScanSuccess, onScanError);
+        }
+
+        async function onScanSuccess(decodedText, decodedResult) {
+            // QR Kod Okundu! decodedText muhtemelen "YEMEKHANE DOĞAL GAZ SİSTEMİ-350804-4" gibi bir şey.
+            html5QrcodeScanner.clear(); // Kamerayı kapat
+            
+            showLoader("Arıza aranıyor...");
+            const res = await sendToBackend({ action: "getOpenFaults" });
+            hideLoader();
+
+            if(res.success) {
+                // Okunan koda göre açık arızalarda Makine isminde bu metni ara
+                // QR Kod genelde: "MAKİNE ADI-MALİYET" şeklindedir. Arızadaki makine adıyla eşleştiriyoruz.
+                const faults = res.data;
+                const matchedFault = faults.find(f => 
+                    decodedText.toUpperCase().includes(f.makine.toUpperCase()) || 
+                    f.makine.toUpperCase().includes(decodedText.toUpperCase())
+                );
+
+                if(matchedFault) {
+                    showOPActionCard(matchedFault);
+                } else {
+                    alert(`QR Kodu okundu: ${decodedText}\nAncak bu makineye ait AÇIK BİR ARIZA bulunamadı!`);
+                }
+            }
+        }
+
+        function onScanError(errorMessage) {
+            // Sürekli okuma yaptığı için hataları loglamaya gerek yok
+        }
+
+        // Manuel Liste
+        async function fetchOpenFaultsForOP() {
+            showLoader("Açık Arızalar Yükleniyor...");
+            const res = await sendToBackend({ action: "getOpenFaults" });
+            hideLoader();
+            
+            if(res.success && res.data.length > 0) {
+                // Basit bir prompt veya liste gösterilebilir.
+                // Gerçek kullanımda ekranda div içine basılmalıdır.
+                let txt = "AÇIK ARIZALAR:\n\n";
+                res.data.forEach((f, idx) => {
+                    txt += `${idx+1}- ${f.makine} (Arıza: ${f.aciklama})\n`;
+                });
+                
+                let sec = prompt(`${txt}\nMüdahale etmek istediğiniz arızanın numarasını girin:`);
+                if(sec && !isNaN(sec)) {
+                    let fault = res.data[parseInt(sec)-1];
+                    if(fault) showOPActionCard(fault);
+                }
+            } else {
+                alert("Şu anda açık arıza bulunmamaktadır.");
+            }
+        }
+
+        function showOPActionCard(fault) {
+            currentFaultRowIndex = fault.rowIndex;
+            document.getElementById('op-makine-adi').innerText = fault.makine;
+            document.getElementById('op-ariza-detay').innerHTML = `<b>Bildiren:</b> ${fault.talepEden} <br><b>Arıza:</b> ${fault.aciklama}`;
+            
+            document.getElementById('op-action-card').style.display = 'block';
+            document.getElementById('op-start-section').style.display = 'block';
+            document.getElementById('op-finish-section').style.display = 'none';
+        }
+
+        async function startJob() {
+            showLoader("İşe başlanıyor...");
+            const res = await sendToBackend({ action: "startMaintenance", rowIndex: currentFaultRowIndex, operatorName: currentUser.name });
+            hideLoader();
+            
+            if(res.success) {
+                document.getElementById('op-start-section').style.display = 'none';
+                document.getElementById('op-finish-section').style.display = 'block';
+                alert("Sayacınız başlatıldı! İşlem bitince aşağıdaki butonlardan durumu seçin.");
+            }
+        }
+
+        async function finishJob(status) {
+            const not = document.getElementById('op-islem-notu').value;
+            if(!not && status === 'TAMAMLANDI') return alert("Lütfen yapılan işlemi kısaca yazınız!");
+
+            showLoader("İşlem kaydediliyor ve süre hesaplanıyor...");
+            const res = await sendToBackend({ 
+                action: "finishMaintenance", 
+                rowIndex: currentFaultRowIndex, 
+                operatorName: currentUser.name,
+                status: status,
+                sonAciklama: not
+            });
+            hideLoader();
+
+            if(res.success) {
+                alert(`İşlem Başarılı!\n${res.message}`);
+                document.getElementById('op-action-card').style.display = 'none';
+                document.getElementById('op-islem-notu').value = "";
+            }
+        }
+
+        // --- 4. YÖNETİCİ EKRANI ---
+        async function loadAdminData() {
+            showLoader("Sistem durumu çekiliyor...");
+            const res = await sendToBackend({ action: "getOpenFaults" });
+            hideLoader();
+            
+            const cont = document.getElementById('admin-faults-container');
+            cont.innerHTML = "";
+            
+            if(res.success) {
+                if(res.data.length === 0) cont.innerHTML = "<p>Bekleyen açık arıza yok.</p>";
+                
+                res.data.forEach(f => {
+                    cont.innerHTML += `
+                        <div class="fault-item">
+                            <h3>${f.makine}</h3>
+                            <p><b>Bildiren:</b> ${f.talepEden} | <b>Tarih:</b> ${new Date(f.tarih).toLocaleString()}</p>
+                            <p><b>Açıklama:</b> ${f.aciklama}</p>
+                            <p><b>Durum (Log):</b> <br>${f.durum.replace(/\n/g, '<br>')}</p>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        // SW Kaydı
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW Hatası:', err));
+            });
+        }
+    </script>
+</body>
+</html>
