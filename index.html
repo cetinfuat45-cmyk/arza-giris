@@ -380,12 +380,23 @@
                     return acc;
                 }, {});
 
+                // Renk Haritası
+                const typeColors = {
+                    "MEKANİK": "#ef4444",    // Kırmızı
+                    "ELEKTRİK": "#3b82f6",    // Mavi
+                    "ELEKTRONİK": "#10b981",  // Yeşil
+                    "SIHHİ TESİSAT": "#f59e0b", // Turuncu
+                    "DİĞER": "#94a3b8"        // Gri
+                };
+
                 for (const [tur, faults] of Object.entries(grouped)) {
-                    cont.innerHTML += `<h2 style="color:var(--accent-orange); margin: 20px 0 10px 0; border-bottom: 2px solid var(--accent-orange); padding-bottom:5px;">${tur} (${faults.length})</h2>`;
+                    const color = typeColors[tur.toUpperCase()] || "#38bdf8"; // Varsayılan mavi
+                    
+                    cont.innerHTML += `<h2 style="color:${color}; margin: 25px 0 10px 0; border-bottom: 2px solid ${color}; padding-bottom:5px; text-transform: uppercase;">${tur} (${faults.length})</h2>`;
                     
                     faults.forEach(f => {
                         cont.innerHTML += `
-                            <div class="fault-item">
+                            <div class="fault-item" style="border-left: 5px solid ${color};">
                                 <h3>${f.makine}</h3>
                                 <p><b>Bildiren:</b> ${f.talepEden} | <b>Tarih:</b> ${new Date(f.tarih).toLocaleString()}</p>
                                 <p><b>Açıklama:</b> ${f.aciklama}</p>
