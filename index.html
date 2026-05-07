@@ -265,6 +265,13 @@
                 dropdownData = res.data;
                 populateSelect('op-ariza-nedeni', dropdownData.arizaNedeni);
                 populateSelect('op-durus-nedeni', dropdownData.durusNedeni);
+                // Hata ayıklama için bulunan sütunları göster (İsteğe bağlı, her girişte çıkar)
+                console.log("Veri Yükleme Özeti:", res.message);
+                if(res.message.includes("Eksik:")) {
+                   alert("UYARI: " + res.message + "\nLütfen 'veri' sayfasındaki başlık isimlerini kontrol edin.");
+                }
+            } else {
+                alert("Veriler yüklenemedi: " + res.message);
             }
         }
 
