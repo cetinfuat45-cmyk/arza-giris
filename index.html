@@ -382,21 +382,31 @@
 
                 // Renk Haritası
                 const typeColors = {
-                    "MEKANİK": "#ef4444",    // Kırmızı
-                    "ELEKTRİK": "#3b82f6",    // Mavi
-                    "ELEKTRONİK": "#10b981",  // Yeşil
-                    "SIHHİ TESİSAT": "#f59e0b", // Turuncu
-                    "DİĞER": "#94a3b8"        // Gri
+                    "İŞ GÜVENLİĞİ": "#ff0000",      // Kıpkırmızı
+                    "ELEKTRİK": "#3b82f6",          // Mavi
+                    "MEKANİK": "#facc15",           // Sarı/Gold
+                    "TEKRAR EDEN ARIZA": "#a855f7",  // Mor
+                    "PLANLI BAKIM": "#22c55e",      // Yeşil
+                    "DİĞER": "#94a3b8"               // Gri
                 };
 
                 for (const [tur, faults] of Object.entries(grouped)) {
-                    const color = typeColors[tur.toUpperCase()] || "#38bdf8"; // Varsayılan mavi
+                    // Kısmi eşleşme kontrolü (Örn: "İŞ GÜVENLİĞİ !!!" gelirse "İŞ GÜVENLİĞİ" rengini al)
+                    let color = "#38bdf8"; // Varsayılan
+                    const upperTur = tur.toUpperCase();
+                    
+                    for (const key in typeColors) {
+                        if (upperTur.includes(key)) {
+                            color = typeColors[key];
+                            break;
+                        }
+                    }
                     
                     cont.innerHTML += `<h2 style="color:${color}; margin: 25px 0 10px 0; border-bottom: 2px solid ${color}; padding-bottom:5px; text-transform: uppercase;">${tur} (${faults.length})</h2>`;
                     
                     faults.forEach(f => {
                         cont.innerHTML += `
-                            <div class="fault-item" style="border-left: 5px solid ${color};">
+                            <div class="fault-item" style="border-left: 5px solid ${color}; border-right: ${upperTur.includes('!') ? '2px solid ' + color : 'none'};">
                                 <h3>${f.makine}</h3>
                                 <p><b>Bildiren:</b> ${f.talepEden} | <b>Tarih:</b> ${new Date(f.tarih).toLocaleString()}</p>
                                 <p><b>Açıklama:</b> ${f.aciklama}</p>
