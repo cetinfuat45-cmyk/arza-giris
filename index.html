@@ -367,18 +367,33 @@
             cont.innerHTML = "";
             
             if(res.success) {
-                if(res.data.length === 0) cont.innerHTML = "<p>Bekleyen açık arıza yok.</p>";
+                if(res.data.length === 0) {
+                    cont.innerHTML = "<p style='text-align:center; padding:20px;'>Bekleyen açık arıza yok.</p>";
+                    return;
+                }
                 
-                res.data.forEach(f => {
-                    cont.innerHTML += `
-                        <div class="fault-item">
-                            <h3>${f.makine}</h3>
-                            <p><b>Bildiren:</b> ${f.talepEden} | <b>Tarih:</b> ${new Date(f.tarih).toLocaleString()}</p>
-                            <p><b>Açıklama:</b> ${f.aciklama}</p>
-                            <p><b>Durum (Log):</b> <br>${f.durum.replace(/\n/g, '<br>')}</p>
-                        </div>
-                    `;
-                });
+                // İş Türüne Göre Gruplandırma
+                const grouped = res.data.reduce((acc, fault) => {
+                    const tur = fault.isTuru || "Belirtilmemiş";
+                    if (!acc[tur]) acc[tur] = [];
+                    acc[tur].push(fault);
+                    return acc;
+                }, {});
+
+                for (const [tur, faults] of Object.entries(grouped)) {
+                    cont.innerHTML += `<h2 style="color:var(--accent-orange); margin: 20px 0 10px 0; border-bottom: 2px solid var(--accent-orange); padding-bottom:5px;">${tur} (${faults.length})</h2>`;
+                    
+                    faults.forEach(f => {
+                        cont.innerHTML += `
+                            <div class="fault-item">
+                                <h3>${f.makine}</h3>
+                                <p><b>Bildiren:</b> ${f.talepEden} | <b>Tarih:</b> ${new Date(f.tarih).toLocaleString()}</p>
+                                <p><b>Açıklama:</b> ${f.aciklama}</p>
+                                <p><b>Durum (Log):</b> <br>${f.durum ? f.durum.replace(/\n/g, '<br>') : 'Henüz işlem yok'}</p>
+                            </div>
+                        `;
+                    });
+                }
             }
         }
 
