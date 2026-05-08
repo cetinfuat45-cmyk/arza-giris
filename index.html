@@ -107,9 +107,12 @@
 
         #qr-reader { width: 100%; max-width: 400px; margin: 0 auto; border-radius: 10px; overflow: hidden; }
 
-        /* AYARLAR VE ÇIKIŞ */
-        .top-bar { width: 100%; display: flex; justify-content: space-between; padding: 15px; position: absolute; top:0; z-index: 100; }
-        .top-bar button { background: none; border: none; color: var(--text-primary); font-size: 24px; cursor: pointer; }
+        /* MODAL STYLES */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); justify-content: center; align-items: center; }
+        .modal-content { background: var(--card-bg); padding: 30px; border-radius: 15px; text-align: center; max-width: 400px; width: 90%; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+        .modal-content h3 { color: var(--accent-orange); margin-bottom: 15px; }
+        .modal-content p { margin-bottom: 25px; line-height: 1.6; }
+        .modal-btns { display: flex; gap: 10px; }
     </style>
 </head>
 <body>
@@ -123,6 +126,18 @@
     <div id="loader">
         <div class="spinner"></div>
         <p id="loader-text">Lütfen bekleyin...</p>
+    </div>
+
+    <!-- VERIFICATION MODAL -->
+    <div id="verify-modal" class="modal">
+        <div class="modal-content">
+            <h3 id="modal-title">Makine Doğrulama</h3>
+            <p id="modal-text"></p>
+            <div class="modal-btns">
+                <button class="btn-primary btn-success" id="modal-confirm-btn" style="flex:1">EVET, BAŞLA</button>
+                <button class="btn-primary btn-danger" id="modal-cancel-btn" style="flex:1">HAYIR, İPTAL</button>
+            </div>
+        </div>
     </div>
 
     <!-- 1. GİRİŞ EKRANI -->
@@ -371,71 +386,61 @@
                 // Okunan QR'dan ID çıkar
                 let scannedId = extractIdFromQR(decodedText);
                 
-                // Eğer yeni sekmedeki listede bu ID varsa, GERÇEK makine adını bul
-                let mappedMachineName = decodedText; // Eşleşmezse kodun kendisi kalsın
-                if(dropdownData && dropdownData.makineMap && dropdownData.makineMap[scannedId]) {
-                    mappedMachineName = dropdownData.makineMap[scannedId];
-                }
+                // Makine adını çöz
+                let mappedMachineName = (dropdownData && dropdownData.makineMap && dropdownData.makineMap[scannedId]) ? dropdownData.makineMap[scannedId] : decodedText;
                 
-                // Eğer bir karta TIKLANARAK gelinmişse
-                if(targetMachineName) {
-                    hideLoader();
-                    // 1. İhtimal: QR'dan çözülen GİZLİ makine adı ile tıklanan makine BİREBİR EŞLEŞTİYSE
-                    if(mappedMachineName.toUpperCase().includes(targetMachineName.toUpperCase()) || 
-                       targetMachineName.toUpperCase().includes(mappedMachineName.toUpperCase())) {
-                        
-                        showOPActionCard({ rowIndex: currentFaultRowIndex, makine: targetMachineName, aciklama: "Sistem: Makine Kimliği Doğrulandı" });
-                        targetMachineName = null; // Sıfırla
-                    } 
-                    // 2. İhtimal: Eşleşmiyorsa uyar ve onaya düşür
-                    else {
-                        let onayaCikanMakine = (dropdownData && dropdownData.makineMap && dropdownData.makineMap[scannedId]) ? dropdownData.makineMap[scannedId] : "Tanımsız/Farklı Sistem";
-                        let onay = confirm(`DİKKAT: YANLIŞ MAKİNE!\n\nSiz listeden "${targetMachineName}" seçtiniz.\nAncak okuttuğunuz QR kod "${onayaCikanMakine}" makinesine ait.\n\nYine de zorla devam etmek (Onaylamak) istiyor musunuz?`);
-                        
-                        if(onay) {
-                            showOPActionCard({ rowIndex: currentFaultRowIndex, makine: targetMachineName, aciklama: "Sistem uyarısına rağmen onaylandı" });
-                            targetMachineName = null;
-                        } else {
-                            startQRScanner(); // Tekrar aç
-                        }
-                    }
-                } else {
-                    // ... (rest of the else block)
-                    const res = await sendToBackend({ action: "getOpenFaults" });
-                    hideLoader();
+                // --- ÖZEL MODAL EKRANINI GÖSTER ---
+                const modal = document.getElementById('verify-modal');
+                const modalText = document.getElementById('modal-text');
+                const confirmBtn = document.getElementById('modal-confirm-btn');
+                const cancelBtn = document.getElementById('modal-cancel-btn');
 
-                    if(res.success) {
-                        const faults = res.data;
-                        const matchedFaults = faults.filter(f => 
-                            mappedMachineName.toUpperCase().includes(f.makine.toUpperCase()) || 
-                            f.makine.toUpperCase().includes(mappedMachineName.toUpperCase())
-                        );
+                modalText.innerHTML = `Okutulan Makine:<br><b style="font-size:20px; color:#fff;">${mappedMachineName}</b><br><br>Bu makine üzerinde işleme başlamak istiyor musunuz?`;
+                modal.style.display = 'flex';
+                hideLoader();
 
-                        if(matchedFaults.length === 1) {
-                            showOPActionCard(matchedFaults[0]);
-                        } else if(matchedFaults.length > 1) {
-                            let txt = `Bu makineye (${matchedFaults[0].makine}) ait ${matchedFaults.length} açık arıza var.\n\nHangisine müdahale edeceksiniz?\n\n`;
-                            matchedFaults.forEach((f, idx) => {
-                                txt += `${idx+1}- Arıza: ${f.aciklama} (Bildiren: ${f.talepEden})\n`;
-                            });
-                            let sec = prompt(`${txt}\nSeçiminiz (1 ile ${matchedFaults.length} arası bir rakam girin):`);
-                            let secIdx = parseInt(sec) - 1;
-                            if(sec && !isNaN(sec) && matchedFaults[secIdx]) {
-                                showOPActionCard(matchedFaults[secIdx]);
+                confirmBtn.onclick = async () => {
+                    modal.style.display = 'none';
+                    showLoader("İşlem Başlatılıyor...");
+                    
+                    if(targetMachineName) {
+                        // Karta tıklayarak geldiyse
+                        showOPActionCard({ rowIndex: currentFaultRowIndex, makine: targetMachineName, aciklama: "Kullanıcı Onayı ile Doğrulandı" });
+                        targetMachineName = null;
+                        hideLoader();
+                    } else {
+                        // Direkt QR okuttuysa
+                        const res = await sendToBackend({ action: "getOpenFaults" });
+                        hideLoader();
+                        if(res.success) {
+                            const matchedFaults = res.data.filter(f => 
+                                mappedMachineName.toUpperCase().includes(f.makine.toUpperCase()) || 
+                                f.makine.toUpperCase().includes(mappedMachineName.toUpperCase())
+                            );
+                            if(matchedFaults.length === 1) {
+                                showOPActionCard(matchedFaults[0]);
+                            } else if(matchedFaults.length > 1) {
+                                let txt = `Bu makineye ait ${matchedFaults.length} arıza var. Seçin:\n\n`;
+                                matchedFaults.forEach((f, idx) => txt += `${idx+1}- ${f.aciklama}\n`);
+                                let sec = prompt(txt);
+                                if(sec && matchedFaults[parseInt(sec)-1]) showOPActionCard(matchedFaults[parseInt(sec)-1]);
                             } else {
-                                alert("Geçersiz seçim yaptınız.");
+                                alert("Bu makineye ait açık arıza bulunamadı!");
                                 startQRScanner();
                             }
-                        } else {
-                            alert(`DİKKAT: EŞLEŞME BULUNAMADI!\n\nSistem bu QR kodu "${mappedMachineName}" olarak okudu ancak bu makineye ait AÇIK BİR ARIZA yok.`);
-                            startQRScanner();
                         }
                     }
-                }
+                };
+
+                cancelBtn.onclick = () => {
+                    modal.style.display = 'none';
+                    startQRScanner();
+                };
+
             } catch (err) {
                 console.error(err);
                 hideLoader();
-                alert("QR İşleme Hatası: " + err.message + "\n\nLütfen backend kodunu güncelleyip YENİ DAĞITIM aldığınızdan emin olun!");
+                alert("QR İşleme Hatası: " + err.message);
                 startQRScanner();
             }
         }
