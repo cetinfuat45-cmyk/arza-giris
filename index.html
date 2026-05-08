@@ -353,40 +353,47 @@
                 await html5Qrcode.stop().catch(console.error); // Kamerayı kapat
             }
             
-            showLoader("QR Doğrulanıyor...");
+            showLoader("QR İşleniyor...");
             
-            // Eğer bir karta TIKLANARAK gelinmişse, sadece o makineyi doğrula
+            // Eğer bir karta TIKLANARAK gelinmişse
             if(targetMachineName) {
+                hideLoader();
+                // 1. İhtimal: QR Kod gerçekten makine adını içeriyorsa (Eski Sistem)
                 if(decodedText.toUpperCase().includes(targetMachineName.toUpperCase()) || 
                    targetMachineName.toUpperCase().includes(decodedText.toUpperCase())) {
                     
-                    // Doğrulama Başarılı!
-                    hideLoader();
-                    showOPActionCard({ rowIndex: currentFaultRowIndex, makine: targetMachineName, aciklama: "Seçili Arıza Doğrulandı" });
+                    showOPActionCard({ rowIndex: currentFaultRowIndex, makine: targetMachineName, aciklama: "QR Eşleşmesi Başarılı" });
                     targetMachineName = null; // Sıfırla
-                } else {
-                    hideLoader();
-                    alert(`HATA: Okutulan QR (${decodedText}) seçtiğiniz makine (${targetMachineName}) ile eşleşmiyor!\nLütfen doğru makineyi okutun.`);
-                    startQRScanner(); // Tekrar aç
+                } 
+                // 2. İhtimal: QR Kod bir AppSheet linki vs. içeriyorsa ve ad uyuşmuyorsa
+                else {
+                    let onay = confirm(`Okunan QR Kod: Karmaşık sistem kodu.\n\nSiz şu anda fiziksel olarak "${targetMachineName}" makinesinin başında mısınız?\n\nDevam etmek için "TAMAM"a basın.`);
+                    
+                    if(onay) {
+                        showOPActionCard({ rowIndex: currentFaultRowIndex, makine: targetMachineName, aciklama: "Kullanıcı Onayı ile Doğrulandı" });
+                        targetMachineName = null;
+                    } else {
+                        startQRScanner(); // Tekrar aç
+                    }
                 }
-                return;
-            }
+            } else {
+                // Eğer listeden aranıyorsa (Eski mantık)
+                const res = await sendToBackend({ action: "getOpenFaults" });
+                hideLoader();
 
-            // Eğer genel listeden arama yapılıyorsa (eski mantık)
-            const res = await sendToBackend({ action: "getOpenFaults" });
-            hideLoader();
+                if(res.success) {
+                    const faults = res.data;
+                    const matchedFault = faults.find(f => 
+                        decodedText.toUpperCase().includes(f.makine.toUpperCase()) || 
+                        f.makine.toUpperCase().includes(decodedText.toUpperCase())
+                    );
 
-            if(res.success) {
-                const faults = res.data;
-                const matchedFault = faults.find(f => 
-                    decodedText.toUpperCase().includes(f.makine.toUpperCase()) || 
-                    f.makine.toUpperCase().includes(decodedText.toUpperCase())
-                );
-
-                if(matchedFault) {
-                    showOPActionCard(matchedFault);
-                } else {
-                    alert(`QR Kodu okundu: ${decodedText}\nAncak bu makineye ait AÇIK BİR ARIZA bulunamadı!`);
+                    if(matchedFault) {
+                        showOPActionCard(matchedFault);
+                    } else {
+                        alert(`AÇIK ARIZA BULUNAMADI!\n\nOkutulan QR: ${decodedText}`);
+                        startQRScanner();
+                    }
                 }
             }
         }
