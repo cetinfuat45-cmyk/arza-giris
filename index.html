@@ -200,9 +200,14 @@
             currentFaultRowIndex = rowIndex;
             targetMachineName = makine;
             await loadOPDropdowns(); // Yönetici de tıklasa listelerin dolması için
+            
             showScreen('screen-op');
-            startQRScanner();
-            alert(`${makine} arızasına müdahale için lütfen makine üzerindeki QR kodu okutun.`);
+            
+            // Kullanıcıya bilgi ver (Alert kamerayı bloke edebilir, bu yüzden timeout ile yapıyoruz)
+            setTimeout(() => {
+                alert(`${makine} arızasına müdahale için lütfen makine üzerindeki QR kodu okutun.`);
+                startQRScanner();
+            }, 100);
         }
 
         // Loader Kontrol
