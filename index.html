@@ -109,10 +109,15 @@
 
         /* MODAL STYLES */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); justify-content: center; align-items: center; }
-        .modal-content { background: var(--card-bg); padding: 30px; border-radius: 15px; text-align: center; max-width: 400px; width: 90%; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+        .modal-content { background: var(--card-bg); padding: 30px; border-radius: 15px; text-align: center; max-width: 450px; width: 90%; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
         .modal-content h3 { color: var(--accent-orange); margin-bottom: 15px; }
         .modal-content p { margin-bottom: 25px; line-height: 1.6; }
         .modal-btns { display: flex; gap: 10px; }
+        .selection-list { display: flex; flex-direction: column; gap: 10px; max-height: 300px; overflow-y: auto; margin-bottom: 20px; }
+        .selection-item { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); cursor: pointer; text-align: left; transition: 0.2s; }
+        .selection-item:hover { background: var(--accent-orange); color: #fff; }
+        .selection-item b { display: block; color: var(--accent-color); margin-bottom: 5px; }
+        .selection-item:hover b { color: #fff; }
     </style>
 </head>
 <body>
@@ -137,6 +142,16 @@
                 <button class="btn-primary btn-success" id="modal-confirm-btn" style="flex:1">EVET, BAŞLA</button>
                 <button class="btn-primary btn-danger" id="modal-cancel-btn" style="flex:1">HAYIR, İPTAL</button>
             </div>
+        </div>
+    </div>
+
+    <!-- SELECTION MODAL (Birden Fazla Arıza Varsa) -->
+    <div id="selection-modal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <h3>Arıza Seçimi</h3>
+            <p>Bu makinede birden fazla açık arıza var. Lütfen müdahale edeceğiniz kaydı seçin:</p>
+            <div id="selection-container" class="selection-list"></div>
+            <button class="btn-primary btn-danger" onclick="document.getElementById('selection-modal').style.display='none'; startQRScanner();">VAZGEÇ</button>
         </div>
     </div>
 
@@ -433,15 +448,28 @@
                                 mappedMachineName.toUpperCase().includes(f.makine.toUpperCase()) || 
                                 f.makine.toUpperCase().includes(mappedMachineName.toUpperCase())
                             );
+                            
                             if(matchedFaults.length === 1) {
                                 showOPActionCard(matchedFaults[0]);
                             } else if(matchedFaults.length > 1) {
-                                let txt = `Bu makineye ait ${matchedFaults.length} arıza var. Seçin:\n\n`;
-                                matchedFaults.forEach((f, idx) => txt += `${idx+1}- ${f.aciklama}\n`);
-                                let sec = prompt(txt);
-                                if(sec && matchedFaults[parseInt(sec)-1]) showOPActionCard(matchedFaults[parseInt(sec)-1]);
+                                // --- PROFESYONEL SEÇİM EKRANI ---
+                                const selModal = document.getElementById('selection-modal');
+                                const selContainer = document.getElementById('selection-container');
+                                selContainer.innerHTML = ""; // Temizle
+                                
+                                matchedFaults.forEach(f => {
+                                    const item = document.createElement('div');
+                                    item.className = 'selection-item';
+                                    item.innerHTML = `<b>Bildiren: ${f.talepEden}</b><span>${f.aciklama}</span>`;
+                                    item.onclick = () => {
+                                        selModal.style.display = 'none';
+                                        showOPActionCard(f);
+                                    };
+                                    selContainer.appendChild(item);
+                                });
+                                selModal.style.display = 'flex';
                             } else {
-                                alert("Bu makineye ait açık arıza bulunamadı!");
+                                alert(`Bu makineye (${mappedMachineName}) ait açık arıza bulunamadı!`);
                                 startQRScanner();
                             }
                         }
