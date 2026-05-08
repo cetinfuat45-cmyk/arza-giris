@@ -347,51 +347,94 @@
             });
         }
 
+        function extractIdFromQR(qrText) {
+            if(!qrText.includes("http")) return qrText.trim();
+            try {
+                let parts = qrText.split('row=');
+                if(parts.length > 1) {
+                    return parts[1].split('&')[0].trim();
+                }
+            } catch(e) {}
+            return qrText.trim();
+        }
+
         async function onScanSuccess(decodedText, decodedResult) {
             // QR Kod Okundu! 
             if(html5Qrcode && html5Qrcode.isScanning) {
                 await html5Qrcode.stop().catch(console.error); // Kamerayı kapat
             }
             
-            showLoader("QR İşleniyor...");
+            showLoader("QR Eşleştiriliyor...");
+            await loadOPDropdowns(); // makineMap verisinin kesinlikle yüklenmiş olmasını sağla
+            
+            // Okunan QR'dan ID çıkar
+            let scannedId = extractIdFromQR(decodedText);
+            
+            // Eğer yeni sekmedeki listede bu ID varsa, GERÇEK makine adını bul
+            let mappedMachineName = decodedText; // Eşleşmezse kodun kendisi kalsın
+            if(dropdownData && dropdownData.makineMap && dropdownData.makineMap[scannedId]) {
+                mappedMachineName = dropdownData.makineMap[scannedId];
+            }
             
             // Eğer bir karta TIKLANARAK gelinmişse
             if(targetMachineName) {
                 hideLoader();
-                // 1. İhtimal: QR Kod gerçekten makine adını içeriyorsa (Eski Sistem)
-                if(decodedText.toUpperCase().includes(targetMachineName.toUpperCase()) || 
-                   targetMachineName.toUpperCase().includes(decodedText.toUpperCase())) {
+                // 1. İhtimal: QR'dan çözülen GİZLİ makine adı ile tıklanan makine BİREBİR EŞLEŞTİYSE
+                if(mappedMachineName.toUpperCase().includes(targetMachineName.toUpperCase()) || 
+                   targetMachineName.toUpperCase().includes(mappedMachineName.toUpperCase())) {
                     
-                    showOPActionCard({ rowIndex: currentFaultRowIndex, makine: targetMachineName, aciklama: "QR Eşleşmesi Başarılı" });
+                    showOPActionCard({ rowIndex: currentFaultRowIndex, makine: targetMachineName, aciklama: "Sistem: Makine Kimliği Doğrulandı" });
                     targetMachineName = null; // Sıfırla
                 } 
-                // 2. İhtimal: QR Kod bir AppSheet linki vs. içeriyorsa ve ad uyuşmuyorsa
+                // 2. İhtimal: Eşleşmiyorsa uyar ve onaya düşür
                 else {
-                    let onay = confirm(`Okunan QR Kod: Karmaşık sistem kodu.\n\nSiz şu anda fiziksel olarak "${targetMachineName}" makinesinin başında mısınız?\n\nDevam etmek için "TAMAM"a basın.`);
+                    let onayaCikanMakine = dropdownData.makineMap[scannedId] ? dropdownData.makineMap[scannedId] : "Tanımsız/Farklı Sistem";
+                    let onay = confirm(`DİKKAT: YANLIŞ MAKİNE!\n\nSiz listeden "${targetMachineName}" seçtiniz.\nAncak okuttuğunuz QR kod "${onayaCikanMakine}" makinesine ait.\n\nYine de zorla devam etmek (Onaylamak) istiyor musunuz?`);
                     
                     if(onay) {
-                        showOPActionCard({ rowIndex: currentFaultRowIndex, makine: targetMachineName, aciklama: "Kullanıcı Onayı ile Doğrulandı" });
+                        showOPActionCard({ rowIndex: currentFaultRowIndex, makine: targetMachineName, aciklama: "Sistem uyarısına rağmen onaylandı" });
                         targetMachineName = null;
                     } else {
                         startQRScanner(); // Tekrar aç
                     }
                 }
             } else {
-                // Eğer listeden aranıyorsa (Eski mantık)
+                // Eğer doğrudan listeden seçilmeden QR okutuluyorsa
                 const res = await sendToBackend({ action: "getOpenFaults" });
                 hideLoader();
 
                 if(res.success) {
                     const faults = res.data;
-                    const matchedFault = faults.find(f => 
-                        decodedText.toUpperCase().includes(f.makine.toUpperCase()) || 
-                        f.makine.toUpperCase().includes(decodedText.toUpperCase())
+                    
+                    // Artık QR'dan çıkan GERÇEK makine adı (mappedMachineName) ile arızaları eşleştir
+                    const matchedFaults = faults.filter(f => 
+                        mappedMachineName.toUpperCase().includes(f.makine.toUpperCase()) || 
+                        f.makine.toUpperCase().includes(mappedMachineName.toUpperCase())
                     );
 
-                    if(matchedFault) {
-                        showOPActionCard(matchedFault);
-                    } else {
-                        alert(`AÇIK ARIZA BULUNAMADI!\n\nOkutulan QR: ${decodedText}`);
+                    if(matchedFaults.length === 1) {
+                        // Tek kayıt varsa direkt aç
+                        showOPActionCard(matchedFaults[0]);
+                    } 
+                    else if(matchedFaults.length > 1) {
+                        // Birden fazla kayıt varsa seçtir
+                        let txt = `Bu makineye (${matchedFaults[0].makine}) ait ${matchedFaults.length} açık arıza var.\n\nHangisine müdahale edeceksiniz?\n\n`;
+                        matchedFaults.forEach((f, idx) => {
+                            txt += `${idx+1}- Arıza: ${f.aciklama} (Bildiren: ${f.talepEden})\n`;
+                        });
+                        
+                        let sec = prompt(`${txt}\nSeçiminiz (1 ile ${matchedFaults.length} arası bir rakam girin):`);
+                        let secIdx = parseInt(sec) - 1;
+                        if(sec && !isNaN(sec) && matchedFaults[secIdx]) {
+                            showOPActionCard(matchedFaults[secIdx]);
+                        } else {
+                            alert("Geçersiz seçim yaptınız. İşlem iptal edildi.");
+                            startQRScanner();
+                        }
+                    } 
+                    else {
+                        // Hiç eşleşmediyse
+                        alert(`DİKKAT: EŞLEŞME BULUNAMADI!\n\nSistem bu QR kodu "${mappedMachineName}" olarak okudu ancak bu makineye ait AÇIK BİR ARIZA yok.`);
                         startQRScanner();
                     }
                 }
