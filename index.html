@@ -358,19 +358,25 @@
                 onScanError
             ).catch(err => {
                 console.error("Kamera açılamadı:", err);
-                alert("Kamera otomatik başlatılamadı! Lütfen tarayıcı ayarlarından kameraya İZİN VERİN veya başka bir uygulamadan açıyorsanız doğrudan Chrome'da açın.");
             });
         }
 
         function extractIdFromQR(qrText) {
-            if(!qrText.includes("http")) return qrText.trim();
+            if(!qrText || typeof qrText !== 'string') return "";
+            let text = qrText.trim();
+            if(!text.includes("http")) return text;
+            
             try {
-                let parts = qrText.split('row=');
-                if(parts.length > 1) {
-                    return parts[1].split('&')[0].trim();
+                // AppSheet URL'lerinden "row=" sonrasını al
+                let rowSearch = ["row=", "ROW=", "Row="];
+                for (let s of rowSearch) {
+                    if(text.includes(s)) {
+                        let id = text.split(s)[1].split('&')[0].split('#')[0];
+                        return id.trim();
+                    }
                 }
-            } catch(e) {}
-            return qrText.trim();
+            } catch(e) { console.error("ID Ayıklama Hatası:", e); }
+            return text;
         }
 
         async function onScanSuccess(decodedText, decodedResult) {
@@ -380,15 +386,25 @@
                     await html5Qrcode.stop().catch(console.error); // Kamerayı kapat
                 }
                 
-                showLoader("QR Eşleştiriliyor...");
-                await loadOPDropdowns(); // makineMap verisinin kesinlikle yüklenmiş olmasını sağla
+                showLoader("Makine Doğrulanıyor...");
+                await loadOPDropdowns(); // Verilerin (makineMap dahil) tam yüklendiğinden emin ol
                 
                 // Okunan QR'dan ID çıkar
                 let scannedId = extractIdFromQR(decodedText);
                 
-                // Makine adını çöz
-                let mappedMachineName = (dropdownData && dropdownData.makineMap && dropdownData.makineMap[scannedId]) ? dropdownData.makineMap[scannedId] : decodedText;
+                // Eğer yeni sekmedeki listede bu ID varsa, GERÇEK makine adını bul
+                let mappedMachineName = decodedText; // Varsayılan: Bulamazsa URL kalsın
                 
+                if(dropdownData && dropdownData.makineMap) {
+                    if(dropdownData.makineMap[scannedId]) {
+                        mappedMachineName = dropdownData.makineMap[scannedId];
+                    } else {
+                        console.warn("ID sözlükte bulunamadı:", scannedId);
+                    }
+                } else {
+                    alert("UYARI: Makine eşleştirme listesi (makineMap) yüklenemedi! Lütfen Google Script tarafında 'YENİ DAĞITIM' aldığınızdan emin olun.");
+                }
+
                 // --- ÖZEL MODAL EKRANINI GÖSTER ---
                 const modal = document.getElementById('verify-modal');
                 const modalText = document.getElementById('modal-text');
