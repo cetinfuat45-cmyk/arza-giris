@@ -191,8 +191,10 @@
         function showScreen(screenId) {
             document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
             document.getElementById(screenId).style.display = 'flex';
-            // Ekran değişince QR tarayıcıyı durdur (isteğe bağlı)
-            if(html5QrcodeScanner) html5QrcodeScanner.clear();
+            // Ekran değişince QR tarayıcıyı durdur
+            if(html5Qrcode && html5Qrcode.isScanning) {
+                html5Qrcode.stop().catch(err => console.log("Kamera durdurma hatası", err));
+            }
         }
 
         // --- Kart Tıklama: QR Okuyucuya Yönlendir ---
@@ -202,12 +204,7 @@
             await loadOPDropdowns(); // Yönetici de tıklasa listelerin dolması için
             
             showScreen('screen-op');
-            
-            // Kullanıcıya bilgi ver (Alert kamerayı bloke edebilir, bu yüzden timeout ile yapıyoruz)
-            setTimeout(() => {
-                alert(`${makine} arızasına müdahale için lütfen makine üzerindeki QR kodu okutun.`);
-                startQRScanner();
-            }, 100);
+            startQRScanner(); // Hiçbir seçenek sunmadan DİREKT kamerayı aç
         }
 
         // Loader Kontrol
@@ -327,16 +324,34 @@
         // Uygulama sadece "giris" sekmesindeki I-P'si boş olan (açık) kayıtları okumak üzerine kurgulandı.
 
         // --- 3. OPERATÖR (QR & LİSTE) ---
-        let html5QrcodeScanner;
+        let html5Qrcode;
         function startQRScanner() {
             document.getElementById('qr-reader').innerHTML = ""; // Temizle
-            html5QrcodeScanner = new Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: 250 });
-            html5QrcodeScanner.render(onScanSuccess, onScanError);
+            
+            if(!html5Qrcode) {
+                html5Qrcode = new Html5Qrcode("qr-reader");
+            }
+
+            // Doğrudan arka kamerayı (environment) başlat
+            html5Qrcode.start(
+                { facingMode: "environment" }, 
+                {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 }
+                },
+                onScanSuccess,
+                onScanError
+            ).catch(err => {
+                console.error("Kamera açılamadı:", err);
+                alert("Kamera otomatik başlatılamadı! Lütfen tarayıcı ayarlarından kameraya İZİN VERİN veya başka bir uygulamadan açıyorsanız doğrudan Chrome'da açın.");
+            });
         }
 
         async function onScanSuccess(decodedText, decodedResult) {
             // QR Kod Okundu! 
-            html5QrcodeScanner.clear(); // Kamerayı kapat
+            if(html5Qrcode && html5Qrcode.isScanning) {
+                await html5Qrcode.stop().catch(console.error); // Kamerayı kapat
+            }
             
             showLoader("QR Doğrulanıyor...");
             
