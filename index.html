@@ -420,64 +420,45 @@
                     alert("UYARI: Makine eşleştirme listesi (makineMap) yüklenemedi! Lütfen Google Script tarafında 'YENİ DAĞITIM' aldığınızdan emin olun.");
                 }
 
-                // --- ÖZEL MODAL EKRANINI GÖSTER ---
-                const modal = document.getElementById('verify-modal');
-                const modalText = document.getElementById('modal-text');
-                const confirmBtn = document.getElementById('modal-confirm-btn');
-                const cancelBtn = document.getElementById('modal-cancel-btn');
+                // --- DOĞRUDAN İŞLEME GEÇ (MODAL KALDIRILDI) ---
+                let mScanned = mappedMachineName.trim().toUpperCase();
+                let mTarget = (targetMachineName || "").trim().toUpperCase();
 
-                modalText.innerHTML = `Okutulan Makine:<br><b style="font-size:20px; color:#fff;">${mappedMachineName}</b><br><br>Bu makine üzerinde işleme başlamak istiyor musunuz?`;
-                modal.style.display = 'flex';
-                hideLoader();
-
-                confirmBtn.onclick = async () => {
-                    modal.style.display = 'none';
-                    showLoader("Arıza Kaydı Getiriliyor...");
-                    
-                    let mScanned = mappedMachineName.trim().toUpperCase();
-                    let mTarget = (targetMachineName || "").trim().toUpperCase();
-
-                    // EĞER tıklanan kart ile okutulan QR AYNI makineye aitse
-                    if(targetMachineName && mScanned === mTarget) {
-                        showOPActionCard({ rowIndex: currentFaultRowIndex, makine: targetMachineName, aciklama: "Seçili Makine Doğrulandı" });
-                        targetMachineName = null;
-                        hideLoader();
-                    } else {
-                        // EĞER farklı bir makine okutulduysa veya direkt QR ile gelindiyse
-                        const res = await sendToBackend({ action: "getOpenFaults" });
-                        hideLoader();
-                        if(res.success) {
-                            const matchedFaults = res.data.filter(f => f.makine.trim().toUpperCase() === mScanned);
-                            
-                            if(matchedFaults.length === 1) {
-                                showOPActionCard(matchedFaults[0]);
-                                targetMachineName = null;
-                            } else if(matchedFaults.length > 1) {
-                                // Profesyonel Seçim Ekranı
-                                const selModal = document.getElementById('selection-modal');
-                                const selContainer = document.getElementById('selection-container');
-                                selContainer.innerHTML = "";
-                                matchedFaults.forEach(f => {
-                                    const item = document.createElement('div');
-                                    item.className = 'selection-item';
-                                    item.innerHTML = `<b>Bildiren: ${f.talepEden}</b><span>${f.aciklama}</span>`;
-                                    item.onclick = () => { selModal.style.display = 'none'; showOPActionCard(f); targetMachineName = null; };
-                                    selContainer.appendChild(item);
-                                });
-                                selModal.style.display = 'flex';
-                            } else {
-                                alert(`DİKKAT: "${mappedMachineName}" makinesine ait açık bir arıza bulunamadı!`);
-                                targetMachineName = null;
-                                startQRScanner();
-                            }
+                // EĞER tıklanan kart ile okutulan QR AYNI makineye aitse
+                if(targetMachineName && mScanned === mTarget) {
+                    showOPActionCard({ rowIndex: currentFaultRowIndex, makine: targetMachineName, aciklama: "Seçili Makine Doğrulandı" });
+                    targetMachineName = null;
+                    hideLoader();
+                } else {
+                    // EĞER farklı bir makine okutulduysa veya direkt QR ile gelindiyse
+                    const res = await sendToBackend({ action: "getOpenFaults" });
+                    hideLoader();
+                    if(res.success) {
+                        const matchedFaults = res.data.filter(f => f.makine.trim().toUpperCase() === mScanned);
+                        
+                        if(matchedFaults.length === 1) {
+                            showOPActionCard(matchedFaults[0]);
+                            targetMachineName = null;
+                        } else if(matchedFaults.length > 1) {
+                            // Profesyonel Seçim Ekranı (Hala Gerekli)
+                            const selModal = document.getElementById('selection-modal');
+                            const selContainer = document.getElementById('selection-container');
+                            selContainer.innerHTML = "";
+                            matchedFaults.forEach(f => {
+                                const item = document.createElement('div');
+                                item.className = 'selection-item';
+                                item.innerHTML = `<b>Bildiren: ${f.talepEden}</b><span>${f.aciklama}</span>`;
+                                item.onclick = () => { selModal.style.display = 'none'; showOPActionCard(f); targetMachineName = null; };
+                                selContainer.appendChild(item);
+                            });
+                            selModal.style.display = 'flex';
+                        } else {
+                            alert(`DİKKAT: "${mappedMachineName}" makinesine ait açık bir arıza bulunamadı!`);
+                            targetMachineName = null;
+                            startQRScanner();
                         }
                     }
-                };
-
-                cancelBtn.onclick = () => {
-                    modal.style.display = 'none';
-                    startQRScanner();
-                };
+                }
 
             } catch (err) {
                 console.error(err);
