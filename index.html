@@ -200,6 +200,7 @@
                 <button class="btn-primary btn-danger" onclick="finishJob('TAMAMLANDI')">İşi Tamamla (Kapat)</button>
                 <button class="btn-primary btn-warning" onclick="finishJob('PARÇA BEKLİYOR')">Parça Bekliyor (Durdur)</button>
                 <button class="btn-primary" onclick="finishJob('VARDİYA DEVRİ')">Vardiya Devri (Durdur)</button>
+                <button id="op-helper-exit-btn" class="btn-primary" style="background:#64748b; margin-top:10px; display:none;" onclick="finishJob('AYRILDI')">Yardımcı Olarak Ayrıl (Sadece İsmi Sil)</button>
             </div>
         </div>
     </div>
@@ -502,12 +503,35 @@
 
         function showOPActionCard(fault) {
             currentFaultRowIndex = fault.rowIndex;
+            const status = fault.durum || "";
             document.getElementById('op-makine-adi').innerText = fault.makine;
-            document.getElementById('op-ariza-detay').innerHTML = `<b>Bildiren:</b> ${fault.talepEden} <br><b>Arıza:</b> ${fault.aciklama}`;
+            document.getElementById('op-ariza-detay').innerHTML = `<b>Bildiren:</b> ${fault.talepEden} <br><b>Arıza:</b> ${fault.aciklama}<br><b>Mevcut Durum:</b> ${status || 'Beklemede'}`;
             
             document.getElementById('op-action-card').style.display = 'block';
-            document.getElementById('op-start-section').style.display = 'block';
-            document.getElementById('op-finish-section').style.display = 'none';
+            
+            const isUserStarted = status.includes(`[BAŞLADI] ${currentUser.name}`);
+            const isUserFinished = status.includes(`[TAMAMLANDI] ${currentUser.name}`) || status.includes(`[AYRILDI] ${currentUser.name}`);
+            const isOtherStarted = status.includes(`[BAŞLADI]`) && !isUserStarted;
+
+            // UI Kontrolü
+            if(isUserStarted && !isUserFinished) {
+                // Kullanıcı zaten işin içinde
+                document.getElementById('op-start-section').style.display = 'none';
+                document.getElementById('op-finish-section').style.display = 'block';
+                // Yardımcı olarak ayrılma butonunu göster
+                document.getElementById('op-helper-exit-btn').style.display = 'block';
+            } else if(isOtherStarted) {
+                // Başkası başlamış, kullanıcı yardımcı olarak katılabilir
+                document.getElementById('op-start-section').innerHTML = `<button class="btn-primary btn-success" onclick="startJob()">YARDIMCI OLARAK KATIL</button>`;
+                document.getElementById('op-start-section').style.display = 'block';
+                document.getElementById('op-finish-section').style.display = 'none';
+            } else {
+                // Kimse başlamamış veya kullanıcı henüz girmemiş
+                document.getElementById('op-start-section').innerHTML = `<button class="btn-primary" onclick="startJob()">İŞE BAŞLA (SAYACI BAŞLAT)</button>`;
+                document.getElementById('op-start-section').style.display = 'block';
+                document.getElementById('op-finish-section').style.display = 'none';
+                document.getElementById('op-helper-exit-btn').style.display = 'none';
+            }
         }
 
         async function startJob() {
