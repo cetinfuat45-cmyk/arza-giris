@@ -522,24 +522,40 @@
             
             document.getElementById('op-action-card').style.display = 'block';
             
+            const lines = status.split("\n");
+            const lastLine = lines[lines.length - 1] || "";
+            const isCurrentlyWaiting = lastLine.toUpperCase().includes("PARÇA BEKLİYOR");
             const isUserStarted = status.includes(`[BAŞLADI] ${currentUser.name}`);
-            const isUserFinished = status.includes(`[TAMAMLANDI] ${currentUser.name}`) || status.includes(`[AYRILDI] ${currentUser.name}`);
-            const isOtherStarted = status.includes(`[BAŞLADI]`) && !isUserStarted;
+            // Kullanıcının en son işlemi BAŞLADI mı yoksa çıktımı?
+            let lastUserAction = "";
+            lines.forEach(l => {
+                if(l.includes(currentUser.name)) {
+                    if(l.includes("[BAŞLADI]")) lastUserAction = "BAŞLADI";
+                    else lastUserAction = "BITTI";
+                }
+            });
+
+            const isUserActive = lastUserAction === "BAŞLADI";
+            const isOtherStarted = status.includes(`[BAŞLADI]`) && !isUserActive;
 
             // UI Kontrolü
-            if(isUserStarted && !isUserFinished) {
+            if(isUserActive) {
                 // Kullanıcı zaten işin içinde
                 document.getElementById('op-start-section').style.display = 'none';
                 document.getElementById('op-finish-section').style.display = 'block';
-                // Yardımcı olarak ayrılma butonunu göster
                 document.getElementById('op-helper-exit-btn').style.display = 'block';
+            } else if(isCurrentlyWaiting) {
+                // Parça bekliyor modunda
+                document.getElementById('op-start-section').innerHTML = `<button class="btn-primary btn-success" onclick="startJob('PARÇA GELDİ')">PARÇA GELDİ (İŞE BAŞLA)</button>`;
+                document.getElementById('op-start-section').style.display = 'block';
+                document.getElementById('op-finish-section').style.display = 'none';
             } else if(isOtherStarted) {
-                // Başkası başlamış, kullanıcı yardımcı olarak katılabilir
+                // Başkası başlamış
                 document.getElementById('op-start-section').innerHTML = `<button class="btn-primary btn-success" onclick="startJob()">YARDIMCI OLARAK KATIL</button>`;
                 document.getElementById('op-start-section').style.display = 'block';
                 document.getElementById('op-finish-section').style.display = 'none';
             } else {
-                // Kimse başlamamış veya kullanıcı henüz girmemiş
+                // Kimse başlamamış
                 document.getElementById('op-start-section').innerHTML = `<button class="btn-primary" onclick="startJob()">İŞE BAŞLA (SAYACI BAŞLAT)</button>`;
                 document.getElementById('op-start-section').style.display = 'block';
                 document.getElementById('op-finish-section').style.display = 'none';
@@ -547,15 +563,16 @@
             }
         }
 
-        async function startJob() {
-            showLoader("İşe başlanıyor...");
+        async function startJob(mode) {
+            let msg = mode === 'PARÇA GELDİ' ? "Parça geldi bilgisi işleniyor..." : "İşe başlanıyor...";
+            showLoader(msg);
             const res = await sendToBackend({ action: "startMaintenance", rowIndex: currentFaultRowIndex, operatorName: currentUser.name });
             hideLoader();
             
             if(res.success) {
-                document.getElementById('op-start-section').style.display = 'none';
-                document.getElementById('op-finish-section').style.display = 'block';
-                alert("Sayacınız başlatıldı! İşlem bitince aşağıdaki butonlardan durumu seçin.");
+                alert(mode === 'PARÇA GELDİ' ? "Parça geldi! İşe başladınız, sayaç devam ediyor." : "Sayacınız başlatıldı!");
+                // Kartı yenilemek için veriyi tekrar çekip göstermek en temizi
+                goHome(); 
             }
         }
 
