@@ -106,6 +106,7 @@
         .fault-item p { margin-bottom: 5px; font-size: 14px; color: var(--text-secondary); }
 
         .active-badge { background: #3b82f6; color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; display: inline-block; margin-bottom: 10px; animation: pulse 2s infinite; }
+        .waiting-badge { background: #f59e0b; color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; display: inline-block; margin-bottom: 10px; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
         #qr-reader { width: 100%; max-width: 400px; margin: 0 auto; border-radius: 10px; overflow: hidden; }
@@ -181,7 +182,7 @@
             
             <button class="btn-primary" style="margin-top:20px;" onclick="startQRScanner()">QR Kamerayı Aç</button>
             <button class="btn-primary btn-warning" onclick="fetchOpenFaultsForOP()">Açık Arızaları Gör (Manuel Liste)</button>
-            <button class="btn-primary btn-danger" style="margin-top:20px;" onclick="showScreen(currentUser.role === 'ADMIN' ? 'screen-admin' : 'screen-op');">ANA SAYFAYA DÖN</button>
+            <button class="btn-primary btn-danger" style="margin-top:20px;" onclick="goHome()">ANA SAYFAYA DÖN</button>
         </div>
 
         <!-- QR Okunduktan sonra çıkan Arıza Detay Ekranı -->
@@ -352,6 +353,18 @@
                 document.getElementById('logout-btn').style.display = 'none';
                 document.getElementById('login-pass').value = "";
                 showScreen('screen-login');
+            }
+        }
+
+        function goHome() {
+            // Arıza kartı açıksa kapat
+            document.getElementById('op-action-card').style.display = 'none';
+            
+            if(currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'YÖNETİCİ')) {
+                loadAdminData();
+                showScreen('screen-admin');
+            } else {
+                showScreen('screen-op');
             }
         }
 
@@ -635,16 +648,18 @@
 
                         const statusText = f.durum || "";
                         const isStarted = statusText.toUpperCase().includes("BAŞLADI");
+                        const isWaiting = statusText.toUpperCase().includes("PARÇA BEKLİYOR");
                         const activeUser = isStarted ? statusText.split(']')[1] || "Bilinmeyen" : "";
 
                         cont.innerHTML += `
                             <div class="fault-item" style="border-left: 5px solid ${color}; border-right: ${upperTur.includes('!') ? '2px solid ' + color : 'none'}; position:relative;" onclick="prepareMaintenance(${f.rowIndex}, '${f.makine}')">
                                 ${isStarted ? `<div class="active-badge">⚡ ŞU AN MÜDAHALE VAR: ${activeUser}</div>` : ''}
+                                ${isWaiting ? `<div class="waiting-badge">⏳ PARÇA BEKLİYOR</div>` : ''}
                                 <h3>${f.makine}</h3>
                                 <p><b>Bildiren:</b> ${f.talepEden} | <b>Tarih:</b> ${displayDate}</p>
                                 <p><b>Maliyet:</b> ${f.maliyetMerkezi} | <b>İş Türü:</b> ${f.isTuru}</p>
                                 <p><b>Açıklama:</b> ${f.aciklama}</p>
-                                <p style="color: ${isStarted ? '#3b82f6' : 'var(--text-secondary)'};"><b>Son İşlem:</b> ${f.durum || 'Henüz işlem yok'}</p>
+                                <p style="color: ${isStarted ? '#3b82f6' : (isWaiting ? '#f59e0b' : 'var(--text-secondary)')};"><b>Son İşlem:</b> ${f.durum || 'Henüz işlem yok'}</p>
                             </div>
                         `;
                     });
