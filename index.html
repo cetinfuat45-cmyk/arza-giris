@@ -174,7 +174,7 @@
 
     <!-- 3. OPERATÖR (QR OKUTMA VE MÜDAHALE EKRANI) -->
     <div id="screen-op" class="screen">
-        <div class="card" style="margin-top: 60px; text-align: center;">
+        <div id="op-scanner-card" class="card" style="margin-top: 60px; text-align: center;">
             <h2 style="margin-bottom: 10px; color: var(--accent-orange);">Operatör Paneli</h2>
             <p style="margin-bottom: 20px; color: var(--text-secondary);">Müdahale edeceğiniz makinenin QR kodunu okutun.</p>
             
@@ -357,15 +357,18 @@
         }
 
         function goHome() {
-            // Arıza kartı açıksa kapat
+            // Tüm ekranları ve kartları temizle/gizle
             document.getElementById('op-action-card').style.display = 'none';
+            document.getElementById('op-scanner-card').style.display = 'block';
             
-            if(currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'YÖNETİCİ')) {
-                loadAdminData();
-                showScreen('screen-admin');
-            } else {
-                showScreen('screen-op');
+            // Kamerayı kapatmayı dene
+            if(html5Qrcode && html5Qrcode.isScanning) {
+                html5Qrcode.stop().catch(e => {});
             }
+
+            // Herkesi ana listeye (Dashboard) gönder
+            loadAdminData();
+            showScreen('screen-admin');
         }
 
         // --- 2. FORM İŞLEMLERİ İPTAL EDİLDİ ---
@@ -520,6 +523,8 @@
             document.getElementById('op-makine-adi').innerText = fault.makine;
             document.getElementById('op-ariza-detay').innerHTML = `<b>Bildiren:</b> ${fault.talepEden} <br><b>Arıza:</b> ${fault.aciklama}<br><b>Mevcut Durum:</b> ${status || 'Beklemede'}`;
             
+            // Kamerayı ve tarayıcı kartını gizle, detay kartını aç
+            document.getElementById('op-scanner-card').style.display = 'none';
             document.getElementById('op-action-card').style.display = 'block';
             
             const lines = status.split("\n");
