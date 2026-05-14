@@ -269,6 +269,24 @@
             }
         }
 
+        // --- GITHUB HIZLI VERİ ÇEKME (VERİ KÖPRÜSÜ) ---
+        async function getOpenFaultsFast() {
+            try {
+                // T (Timestamp) parametresi, verinin her seferinde en güncel halini çekmesini (cache kırmayı) sağlar.
+                const url = "https://raw.githubusercontent.com/cetinfuat45-cmyk/issss-form/main/veriler.json?t=" + new Date().getTime();
+                const response = await fetch(url);
+                if(response.ok) {
+                    const data = await response.json();
+                    return { success: true, data: data };
+                }
+            } catch(e) {
+                console.error("Hızlı veri çekilemedi, eski yavaş yönteme dönülüyor...", e);
+            }
+            // Eğer GitHub'dan çekemezse (hata olursa) güvenli liman olarak eski sisteme (Google Sheets) başvursun.
+            return await sendToBackend({ action: "getOpenFaults" });
+        }
+
+
         // --- 1. GİRİŞ İŞLEMİ ---
         async function doLogin() {
             const pass = document.getElementById('login-pass').value.trim();
@@ -452,7 +470,7 @@
                     hideLoader();
                 } else {
                     // EĞER farklı bir makine okutulduysa veya direkt QR ile gelindiyse
-                    const res = await sendToBackend({ action: "getOpenFaults" });
+                    const res = await getOpenFaultsFast();
                     hideLoader();
                     if(res.success) {
                         const matchedFaults = res.data.filter(f => f.makine.trim().toUpperCase() === mScanned);
@@ -496,7 +514,7 @@
         // Manuel Liste
         async function fetchOpenFaultsForOP() {
             showLoader("Açık Arızalar Yükleniyor...");
-            const res = await sendToBackend({ action: "getOpenFaults" });
+            const res = await getOpenFaultsFast();
             hideLoader();
             
             if(res.success && res.data.length > 0) {
@@ -612,7 +630,7 @@
         // --- 4. AÇIK ARIZALAR LİSTESİ (YÖNETİCİ/PERSONEL EKRANI) ---
         async function loadAdminData() {
             showLoader("Açık Arızalar Çekiliyor...");
-            const res = await sendToBackend({ action: "getOpenFaults" });
+            const res = await getOpenFaultsFast();
             hideLoader();
             
             const cont = document.getElementById('admin-faults-container');
