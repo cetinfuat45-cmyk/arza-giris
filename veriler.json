@@ -1,0 +1,156 @@
+[
+  {
+    "rowIndex": 2,
+    "tarih": "Wed May 06 2026 15:01:46 GMT+0300 (Türkiye Standard Time)",
+    "talepEden": "Fuat Cetin",
+    "maliyetMerkezi": "01-350522-Bakim ve Onarim & Üretim",
+    "makine": "KOMPRESÖR KAİSER",
+    "vardiya": "2.VARDİYA 08:00 // 16:00        ",
+    "isTuru": "İŞ GÜVENLİĞİ !!!        ",
+    "aciklama": "Xjjduud",
+    "durum": ""
+  },
+  {
+    "rowIndex": 3,
+    "tarih": "Wed May 06 2026 16:49:42 GMT+0300 (Türkiye Standard Time)",
+    "talepEden": "Fuat Cetin",
+    "maliyetMerkezi": "08-350804-Insan Kaynaklari",
+    "makine": "YEMEKHANE ISITMA SİSTEMİ",
+    "vardiya": "2.VARDİYA 08:00 // 16:00        ",
+    "isTuru": "İŞ GÜVENLİĞİ !!!        ",
+    "aciklama": "Bbbhjjj",
+    "durum": ""
+  },
+  {
+    "rowIndex": 4,
+    "tarih": "Thu May 07 2026 07:56:40 GMT+0300 (Türkiye Standard Time)",
+    "talepEden": "fuat cetin",
+    "maliyetMerkezi": "01-350522-Bakim ve Onarim & Üretim",
+    "makine": "LUPAMAT KOMPRESÖR (LKS 63/521) -1",
+    "vardiya": "2.VARDİYA 08:00 // 16:00        ",
+    "isTuru": "İŞ GÜVENLİĞİ !!!        ",
+    "aciklama": "hg jghjgh ghj",
+    "durum": ""
+  },
+  {
+    "rowIndex": 5,
+    "tarih": "Thu May 07 2026 08:30:25 GMT+0300 (Türkiye Standard Time)",
+    "talepEden": "Efekan Yetim",
+    "maliyetMerkezi": "01-350522-Bakim ve Onarim & Üretim",
+    "makine": "FABRIKA TEMİZ SU SİSTEMİ",
+    "vardiya": "2.VARDİYA 08:00 // 16:00        ",
+    "isTuru": "ELEKTRİK ARIZA        ",
+    "aciklama": "Pano sistemi arızalı",
+    "durum": ""
+  },
+  {
+    "rowIndex": 6,
+    "tarih": "Thu May 07 2026 08:35:13 GMT+0300 (Türkiye Standard Time)",
+    "talepEden": "Aykut Öz ",
+    "maliyetMerkezi": "26-351430-AL Montaj (CuMs dahil)",
+    "makine": "Montaj İst 2- 500 Kg Pergel Vinç",
+    "vardiya": "2.VARDİYA 08:00 // 16:00        ",
+    "isTuru": "ELEKTRİK ARIZA        ",
+    "aciklama": "Akdkdıdksd",
+    "durum": ""
+  },
+  {
+    "rowIndex": 7,
+    "tarih": "Thu May 07 2026 14:27:15 GMT+0300 (Türkiye Standard Time)",
+    "talepEden": "Fuat Cetin",
+    "maliyetMerkezi": "01-350522-Bakim ve Onarim & Üretim",
+    "makine": "KOMPRESÖR KAİSER",
+    "vardiya": "2.VARDİYA 08:00 // 16:00        ",
+    "isTuru": "MEKANİK ARIZA        ",
+    "aciklama": "Djjdujd",
+    "durum": ""
+  },
+  {
+    "rowIndex": 8,
+    "tarih": "Thu May 07 2026 14:27:47 GMT+0300 (Türkiye Standard Time)",
+    "talepEden": "Fuat Cetin",
+    "maliyetMerkezi": "01-350522-Bakim ve Onarim & Üretim",
+    "makine": "LUPAMAT KOMPRESÖR (LKS 63/521) -1",
+    "vardiya": "2.VARDİYA 08:00 // 16:00        ",
+    "isTuru": "TEKRAR EDEN ARIZA   !!!!        ",
+    "aciklama": "Sjjd8ud",
+    "durum": ""
+  },
+  {
+    "rowIndex": 9,
+    "tarih": "Thu May 07 2026 14:28:25 GMT+0300 (Türkiye Standard Time)",
+    "talepEden": "Fuat Cetin",
+    "maliyetMerkezi": "01-350522-Bakim ve Onarim & Üretim",
+    "makine": "LUPAMAT KOMPRESÖR (LKS 63/521) -2",
+    "vardiya": "2.VARDİYA 08:00 // 16:00        ",
+    "isTuru": "PLANLI BAKIM KODU        ",
+    "aciklama": "Jsjduudu",
+    "durum": ""
+  },
+  {
+    "rowIndex": 10,
+    "tarih": "Thu May 07 2026 14:29:09 GMT+0300 (Türkiye Standard Time)",
+    "talepEden": "Fuat Cetin",
+    "maliyetMerkezi": "01-350522-Bakim ve Onarim & Üretim",
+    "makine": "FABRIKA TEMİZ SU SİSTEMİ",
+    "vardiya": "2.VARDİYA 08:00 // 16:00        ",
+    "isTuru": "MEKANİK ARIZA        ",
+    "aciklama": "Duueu sije",
+    "durum": ""
+  },
+  {
+    "rowIndex": 11,
+    "tarih": "Thu May 07 2026 18:51:33 GMT+0300 (Türkiye Standard Time)",
+    "talepEden": "Fuat Cetin ",
+    "maliyetMerkezi": "01-350522-Bakim ve Onarim & Üretim",
+    "makine": "LUPAMAT KOMPRESÖR (LKS 63/521) -1",
+    "vardiya": "1.VARDİYA 00:00 // 08:00        ",
+    "isTuru": "MEKANİK ARIZA        ",
+    "aciklama": "Sderd rrrr rr",
+    "durum": ""
+  },
+  {
+    "rowIndex": 12,
+    "tarih": "Fri May 08 2026 08:12:06 GMT+0300 (Türkiye Standard Time)",
+    "talepEden": "Fuat Cetin",
+    "maliyetMerkezi": "01-350522-Bakim ve Onarim & Üretim",
+    "makine": "JENARATÖR -TJ33S5C ",
+    "vardiya": "2.VARDİYA 08:00 // 16:00        ",
+    "isTuru": "ELEKTRİK ARIZA        ",
+    "aciklama": "Denem",
+    "durum": ""
+  },
+  {
+    "rowIndex": 13,
+    "tarih": "Fri May 08 2026 08:12:38 GMT+0300 (Türkiye Standard Time)",
+    "talepEden": "Fuat Cetin",
+    "maliyetMerkezi": "01-350522-Bakim ve Onarim & Üretim",
+    "makine": "JENARATÖR -TJ33S5C ",
+    "vardiya": "2.VARDİYA 08:00 // 16:00        ",
+    "isTuru": "ELEKTRİK ARIZA        ",
+    "aciklama": "Deneme",
+    "durum": ""
+  },
+  {
+    "rowIndex": 14,
+    "tarih": "Sat May 09 2026 10:02:06 GMT+0300 (Türkiye Standard Time)",
+    "talepEden": "fuat cetin",
+    "maliyetMerkezi": "01-350522-Bakim ve Onarim & Üretim",
+    "makine": "KOMPRESÖR KAİSER",
+    "vardiya": "2.VARDİYA 08:00 // 16:00        ",
+    "isTuru": "TEKRAR EDEN ARIZA   !!!!        ",
+    "aciklama": "glguıili",
+    "durum": ""
+  },
+  {
+    "rowIndex": 15,
+    "tarih": "Mon May 11 2026 08:43:31 GMT+0300 (Türkiye Standard Time)",
+    "talepEden": "fuat cetin",
+    "maliyetMerkezi": "01-350522-Bakim ve Onarim & Üretim",
+    "makine": "JENARATÖR -TJ33S5C ",
+    "vardiya": "2.VARDİYA 08:00 // 16:00        ",
+    "isTuru": "ELEKTRİK ARIZA        ",
+    "aciklama": "klnşşljkş",
+    "durum": ""
+  }
+]
