@@ -273,7 +273,7 @@
         async function getOpenFaultsFast() {
             try {
                 // T (Timestamp) parametresi, verinin her seferinde en güncel halini çekmesini (cache kırmayı) sağlar.
-                const url = "https://raw.githubusercontent.com/cetinfuat45-cmyk/issss-form/main/veriler.json?t=" + new Date().getTime();
+                const url = "https://raw.githubusercontent.com/cetinfuat45-cmyk/arza-giris/main/veriler.json?t=" + new Date().getTime();
                 const response = await fetch(url);
                 if(response.ok) {
                     const data = await response.json();
