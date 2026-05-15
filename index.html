@@ -269,20 +269,38 @@
             }
         }
 
-        // --- GITHUB HIZLI VERİ ÇEKME (VERİ KÖPRÜSÜ) ---
+        // --- GITHUB CANLI API VERİ ÇEKME (ÖNBELLEKSİZ / SIFIR GECİKME) ---
         async function getOpenFaultsFast() {
             try {
-                // T (Timestamp) parametresi, verinin her seferinde en güncel halini çekmesini (cache kırmayı) sağlar.
-                const url = "https://raw.githubusercontent.com/cetinfuat45-cmyk/arza-giris/main/veriler.json?t=" + new Date().getTime();
-                const response = await fetch(url);
+                // Arka uçtaki aynı token. Saatte 5000 canlı sorgu hakkı verir.
+                const GH_TOKEN = "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"; 
+                const url = "https://api.github.com/repos/cetinfuat45-cmyk/arza-giris/contents/veriler.json?t=" + new Date().getTime();
+                
+                const response = await fetch(url, {
+                    headers: { 
+                        "Authorization": "token " + GH_TOKEN,
+                        "Accept": "application/vnd.github.v3+json",
+                        "Cache-Control": "no-cache" // Önbelleği kesin olarak reddet
+                    }
+                });
+                
                 if(response.ok) {
-                    const data = await response.json();
+                    const result = await response.json();
+                    // GitHub API'den gelen Base64 veriyi Türkçe karakterleri bozmadan çöz (UTF-8)
+                    const binaryString = atob(result.content);
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) {
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }
+                    const decodedStr = new TextDecoder('utf-8').decode(bytes);
+                    
+                    const data = JSON.parse(decodedStr);
                     return { success: true, data: data };
                 }
             } catch(e) {
-                console.error("Hızlı veri çekilemedi, eski yavaş yönteme dönülüyor...", e);
+                console.error("GitHub Canlı API'den veri çekilemedi:", e);
             }
-            // Eğer GitHub'dan çekemezse (hata olursa) güvenli liman olarak eski sisteme (Google Sheets) başvursun.
+            // Eğer internet kopsa veya GitHub çökse bile sistem durmasın diye yedek köprü (Google)
             return await sendToBackend({ action: "getOpenFaults" });
         }
 
@@ -593,9 +611,20 @@
             hideLoader();
             
             if(res.success) {
-                alert(mode === 'PARÇA GELDİ' ? "Parça geldi! İşe başladınız, sayaç devam ediyor." : "Sayacınız başlatıldı!");
-                // Kartı yenilemek için veriyi tekrar çekip göstermek en temizi
-                goHome(); 
+                // Eğer backend'deki koruma sistemi "Zaten başlamış" uyarısı verirse
+                if (res.message === "Zaten bu işe başlamış durumdasınız.") {
+                    alert("Bilgi: " + res.message + " Bu yüzden doğrudan kapatma ekranına yönlendiriliyorsunuz.");
+                    // Yönlendirme (Kapatma/Bitiş ekranını aç)
+                    document.getElementById('op-start-section').style.display = 'none';
+                    document.getElementById('op-finish-section').style.display = 'block';
+                    document.getElementById('op-helper-exit-btn').style.display = 'block';
+                } else {
+                    // Normal başarılı başlama durumu
+                    alert(mode === 'PARÇA GELDİ' ? "Parça geldi! İşe başladınız, sayaç devam ediyor." : "Sayacınız başlatıldı!");
+                    goHome(); 
+                }
+            } else {
+                alert("Hata: " + res.message);
             }
         }
 
