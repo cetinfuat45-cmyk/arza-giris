@@ -185,6 +185,14 @@
             <button class="btn-primary btn-danger" style="margin-top:20px;" onclick="goHome()">ANA SAYFAYA DÖN</button>
         </div>
 
+        <!-- Birden Fazla Arıza Varsa Seçim Ekranı -->
+        <div id="op-selection-card" class="card" style="display: none; margin-top: 60px; text-align: left;">
+            <h3 style="color: var(--accent-color); margin-bottom: 10px; text-align: center;">Müdahale Edeceğiniz Arızayı Seçin</h3>
+            <p style="text-align: center; color: var(--text-secondary); margin-bottom: 20px;">Bu makinede birden fazla açık arıza bulundu. Lütfen işlem yapmak istediğiniz arızaya tıklayın.</p>
+            <div id="op-selection-list"></div>
+            <button class="btn-primary btn-danger" style="margin-top:20px;" onclick="goHome()">İPTAL / GERİ DÖN</button>
+        </div>
+
         <!-- QR Okunduktan sonra çıkan Arıza Detay Ekranı -->
         <div id="op-action-card" class="card" style="display: none;">
             <h3 id="op-makine-adi" style="color: var(--accent-color); margin-bottom: 10px;"></h3>
@@ -496,18 +504,33 @@
                             showOPActionCard(matchedFaults[0]);
                             targetMachineName = null;
                         } else if(matchedFaults.length > 1) {
-                            // Profesyonel Seçim Ekranı (Hala Gerekli)
-                            const selModal = document.getElementById('selection-modal');
-                            const selContainer = document.getElementById('selection-container');
+                            // Çoklu Arıza Seçim Ekranını (Kartları) Göster
+                            document.getElementById('op-scanner-card').style.display = 'none';
+                            document.getElementById('op-selection-card').style.display = 'block';
+                            
+                            const selContainer = document.getElementById('op-selection-list');
                             selContainer.innerHTML = "";
+                            
                             matchedFaults.forEach(f => {
-                                const item = document.createElement('div');
-                                item.className = 'selection-item';
-                                item.innerHTML = `<b>Bildiren: ${f.talepEden}</b><span>${f.aciklama}</span>`;
-                                item.onclick = () => { selModal.style.display = 'none'; showOPActionCard(f); targetMachineName = null; };
-                                selContainer.appendChild(item);
+                                const card = document.createElement('div');
+                                card.className = 'fault-card';
+                                card.style.cursor = 'pointer';
+                                card.style.marginBottom = '10px';
+                                card.innerHTML = `
+                                    <div class="fault-title" style="color:var(--accent-color);">${f.makine}</div>
+                                    <div class="fault-detail">
+                                        <strong>Bildiren:</strong> ${f.talepEden} | <strong>Tarih:</strong> ${f.tarih}<br>
+                                        <strong style="color:#ef4444;">Arıza: ${f.aciklama}</strong><br>
+                                        <strong>Mevcut Durum:</strong> ${f.durum || 'Beklemede'}
+                                    </div>
+                                `;
+                                card.onclick = () => { 
+                                    document.getElementById('op-selection-card').style.display = 'none'; 
+                                    showOPActionCard(f); 
+                                    targetMachineName = null; 
+                                };
+                                selContainer.appendChild(card);
                             });
-                            selModal.style.display = 'flex';
                         } else {
                             alert(`DİKKAT: "${mappedMachineName}" makinesine ait açık bir arıza bulunamadı!`);
                             targetMachineName = null;
