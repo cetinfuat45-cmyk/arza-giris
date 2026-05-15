@@ -498,7 +498,17 @@
                     const res = await getOpenFaultsFast();
                     hideLoader();
                     if(res.success) {
-                        const matchedFaults = res.data.filter(f => f.makine.trim().toUpperCase() === mScanned);
+                        // Esnek eşleştirme: Boşlukları sil, Türkçe karakterleri ingilizceye çevir
+                        const normalize = (str) => {
+                            if(!str) return "";
+                            return str.trim().toUpperCase()
+                                .replace(/\s+/g, "")
+                                .replace(/Ö/g, "O").replace(/Ü/g, "U").replace(/Ş/g, "S")
+                                .replace(/Ç/g, "C").replace(/Ğ/g, "G").replace(/İ/g, "I");
+                        };
+                        
+                        const normScanned = normalize(mappedMachineName);
+                        const matchedFaults = res.data.filter(f => normalize(f.makine) === normScanned);
                         
                         if(matchedFaults.length === 1) {
                             showOPActionCard(matchedFaults[0]);
